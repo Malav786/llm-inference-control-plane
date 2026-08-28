@@ -1,0 +1,48 @@
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Node & Frontend Build
+node_modules/
+dist/
+build/
+.next/
+out/
+.cache/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# UV & Package Managers
+.uv/
+package-lock.json.bak
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS generated files
+Thumbs.db
+desktop.ini
+

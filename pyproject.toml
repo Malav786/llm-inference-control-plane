@@ -1,0 +1,14 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "inference-engine-scheduler"
+version = "0.1.0"
+description = "Scalable LLM Inference Request Scheduler Engine & Telemetry Dashboard"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["python_core"]
