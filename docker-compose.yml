@@ -1,0 +1,13 @@
+services:
+  control-plane:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: llm-inference-control-plane
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8000
+      - HOST=0.0.0.0
+    restart: unless-stopped

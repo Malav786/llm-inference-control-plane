@@ -8,7 +8,16 @@ version = "0.1.0"
 description = "Scalable LLM Inference Request Scheduler Engine & Telemetry Dashboard"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0",
+    "pydantic>=2.0.0",
+    "websockets>=11.0",
+    "httpx>=0.24.0",
+    "slowapi>=0.1.8",
+    "python-multipart>=0.0.6",
+]
 
 [tool.hatch.build.targets.wheel]
-packages = ["python_core"]
+packages = ["python_core", "backend"]
+
