@@ -14,9 +14,11 @@ import {
   Mail,
   ExternalLink,
   ShieldCheck,
-  Code2
+  Code2,
+  Compass
 } from 'lucide-react';
 import { useMode } from '../context/ModeContext';
+import { OnboardingTour } from '../components/story/OnboardingTour';
 
 const GithubIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -166,6 +168,9 @@ const CHAT_SCRIPT: ChatMessage[] = [
 export const StoryHome: React.FC = () => {
   const { mode, setMode, t } = useMode();
 
+  // Onboarding Tour state
+  const [isTourOpen, setIsTourOpen] = useState(false);
+
   // Chat conversation state
   const [messages, setMessages] = useState<ChatMessage[]>([CHAT_SCRIPT[0], CHAT_SCRIPT[1]]);
   const [isTyping, setIsTyping] = useState(false);
@@ -217,6 +222,9 @@ export const StoryHome: React.FC = () => {
 
   return (
     <div className="min-h-screen max-w-[1300px] mx-auto px-4 py-8 md:px-8 space-y-12 text-[#0f172a]">
+      {/* ── First-Time Visitor Interactive Spotlight Tour ── */}
+      <OnboardingTour isOpen={isTourOpen ? true : undefined} onClose={() => setIsTourOpen(false)} />
+
       {/* ── Top Header & Mode Switcher (Silicon Studio Style) ── */}
       <header className="card-elev p-5 bg-white border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Left: Project Branding */}
@@ -237,10 +245,22 @@ export const StoryHome: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Docs Link & Interactive Mode Selector */}
+        {/* Right: Tour, Docs Link & Interactive Mode Selector */}
         <div className="flex flex-wrap items-center gap-3">
+          {/* Quick Guided Tour Replay Button */}
+          <button
+            onClick={() => setIsTourOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold transition-all cursor-pointer shadow-xs"
+            title="Start Guided Tour"
+          >
+            <Compass className="w-3.5 h-3.5 text-blue-600 animate-spin-slow" />
+            <span>Guided Tour</span>
+          </button>
+
+          {/* Developer Docs & Specs */}
           <Link
             to="/docs"
+            id="tour-docs-link"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer"
           >
             <BookOpen className="w-4 h-4 text-blue-600" />
@@ -248,7 +268,7 @@ export const StoryHome: React.FC = () => {
           </Link>
 
           {/* User Experience Mode Switcher */}
-          <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200 shadow-inner">
+          <div id="tour-mode-switcher" className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200 shadow-inner">
             <button
               onClick={() => setMode('eli5')}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -297,7 +317,7 @@ export const StoryHome: React.FC = () => {
       </div>
 
       {/* ── Dual-Character Comic Chat Centerpiece ── */}
-      <section className="relative">
+      <section id="tour-comic-chat" className="relative">
         <div className="card-elev p-6 md:p-8 bg-white border border-slate-200/90 rounded-3xl shadow-lg space-y-6">
           {/* Header Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
@@ -451,7 +471,7 @@ export const StoryHome: React.FC = () => {
       </section>
 
       {/* ── 6-Level Systems Curriculum ── */}
-      <section className="space-y-6">
+      <section id="tour-modules-grid" className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
           <div>
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-blue-600">
@@ -504,7 +524,7 @@ export const StoryHome: React.FC = () => {
       </section>
 
       {/* ── Grand Finale Live Factory Banner (Strictly the Last Destination) ── */}
-      <section className="pt-4">
+      <section id="tour-factory-cta" className="pt-4">
         <div className="card-elev p-8 md:p-10 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-700 text-white shadow-xl flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-mono font-bold uppercase tracking-wider">
