@@ -260,7 +260,6 @@ export const StoryHome: React.FC = () => {
           {/* Developer Docs & Specs */}
           <Link
             to="/docs"
-            id="tour-docs-link"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer"
           >
             <BookOpen className="w-4 h-4 text-blue-600" />
@@ -278,7 +277,6 @@ export const StoryHome: React.FC = () => {
               }`}
             >
               <span>👶 ELI5 Mode</span>
-              <span className="text-[10px] opacity-80">(Plain English)</span>
             </button>
 
             <button
@@ -290,7 +288,6 @@ export const StoryHome: React.FC = () => {
               }`}
             >
               <span>⚡ Senior Dev</span>
-              <span className="text-[10px] opacity-80">(Systems Spec)</span>
             </button>
           </div>
         </div>
@@ -552,7 +549,7 @@ export const StoryHome: React.FC = () => {
       {/* ── High-End Product Footer ── */}
       <footer className="mt-12 pt-12 pb-8 border-t border-slate-200 text-[#0f172a] space-y-10">
         {/* Main Footer Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div id="tour-docs-link" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand & Creator Bio */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
