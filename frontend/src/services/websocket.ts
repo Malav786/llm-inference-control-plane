@@ -19,12 +19,13 @@ function createInitialSnapshot(): TelemetrySnapshot {
     strategy: 'priority',
     strategy_label: 'Priority-Aware Preemption Strategy',
     hardware: 'NVIDIA H100 SXM (80GB HBM3)',
+    telemetry_kind: 'fallback_offline',
     metrics: {
-      ttft_p99_ms: 28.4,
-      tpot_avg_ms: 14.8,
-      throughput_tokens_sec: 2450,
-      sm_compute_util_pct: 82.5,
-      hbm_bandwidth_util_pct: 88.0,
+      ttft_p99_ms: null,
+      tpot_avg_ms: null,
+      throughput_tokens_sec: 0,
+      sm_compute_util_pct: 0,
+      hbm_bandwidth_util_pct: 0,
       kv_capacity_blocks: total,
       allocated_blocks: allocated,
       kv_utilization_pct: 50.0,
@@ -127,7 +128,10 @@ class WebSocketClient {
 
     this.fallbackInterval = setInterval(() => {
       this.fallbackStep += 1;
-      const allocated = Math.min(32, 14 + Math.floor(Math.sin(this.fallbackStep / 3) * 10));
+      const s = this.fallbackStep;
+      // Deterministic oscillation — no Math.random(); values are clearly
+      // synthetic demos, not measurements. Label as fallback_offline.
+      const allocated = Math.min(32, 14 + Math.floor(Math.sin(s / 3) * 10));
       const total = 32;
 
       const mockBlocks = Array.from({ length: total }, (_, idx) => ({
@@ -137,18 +141,26 @@ class WebSocketClient {
         tokens_stored: idx < allocated ? 16 : 0,
       })) as any;
 
+      // Deterministic metric oscillation derived from step index
+      const ttft = Number((20.0 + Math.abs(Math.sin(s / 7)) * 15).toFixed(1));
+      const tpot = Number((4.0 + Math.abs(Math.cos(s / 5)) * 2).toFixed(1));
+      const throughput = 1800 + Math.floor(Math.abs(Math.sin(s / 4)) * 400);
+      const smUtil = Number((55.0 + Math.abs(Math.sin(s / 6)) * 30).toFixed(1));
+      const hbmUtil = Number((60.0 + Math.abs(Math.cos(s / 8)) * 25).toFixed(1));
+
       this.lastSnapshot = {
         step: this.fallbackStep,
         timestamp: Date.now() / 1000,
         strategy: 'priority',
         strategy_label: 'Priority-Aware Preemption Strategy',
         hardware: 'NVIDIA H100 SXM (80GB HBM3)',
+        telemetry_kind: 'fallback_offline',
         metrics: {
-          ttft_p99_ms: Number((24.5 + Math.random() * 12).toFixed(1)),
-          tpot_avg_ms: Number((14.2 + Math.random() * 4).toFixed(1)),
-          throughput_tokens_sec: 2150 + Math.floor(Math.random() * 500),
-          sm_compute_util_pct: Number((78.0 + Math.random() * 18).toFixed(1)),
-          hbm_bandwidth_util_pct: Number((84.0 + Math.random() * 12).toFixed(1)),
+          ttft_p99_ms: ttft,
+          tpot_avg_ms: tpot,
+          throughput_tokens_sec: throughput,
+          sm_compute_util_pct: smUtil,
+          hbm_bandwidth_util_pct: hbmUtil,
           kv_capacity_blocks: total,
           allocated_blocks: allocated,
           kv_utilization_pct: Number(((allocated / total) * 100).toFixed(1)),
@@ -157,8 +169,8 @@ class WebSocketClient {
         step_actions: {
           prefill: [['REQ-101', 128], ['REQ-103', 256]],
           decode: ['REQ-102', 'REQ-104'],
-          preempt: this.fallbackStep % 6 === 0 ? ['REQ-105'] : [],
-          finished: this.fallbackStep % 4 === 0 ? ['REQ-100'] : [],
+          preempt: s % 6 === 0 ? ['REQ-105'] : [],
+          finished: s % 4 === 0 ? ['REQ-100'] : [],
         },
         kv_blocks: mockBlocks,
       };

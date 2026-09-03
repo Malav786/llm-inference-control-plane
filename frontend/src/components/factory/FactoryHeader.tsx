@@ -7,10 +7,13 @@ import type { Mode } from '../../context/ModeContext';
 
 interface FactoryHeaderProps {
   isConnected: boolean;
+  /** "modeled_estimate" | "fallback_offline" | undefined */
+  telemetryKind?: string;
 }
 
 export const FactoryHeader: React.FC<FactoryHeaderProps> = ({
   isConnected,
+  telemetryKind,
 }) => {
   const { mode, setMode, t } = useMode();
 
@@ -60,6 +63,17 @@ export const FactoryHeader: React.FC<FactoryHeaderProps> = ({
 
       {/* Right: Status + Actions */}
       <div className="flex items-center gap-2">
+        {/* Telemetry kind badge */}
+        {telemetryKind === 'modeled_estimate' && (
+          <div
+            title="Metrics are first-order roofline model estimates, not hardware measurements"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold bg-amber-50 border-amber-200 text-amber-700"
+          >
+            <span>📐</span>
+            <span>Modeled Estimate</span>
+          </div>
+        )}
+
         {/* Connection status */}
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ${
           isConnected
@@ -67,7 +81,7 @@ export const FactoryHeader: React.FC<FactoryHeaderProps> = ({
             : 'bg-rose-50 border-rose-200 text-rose-700'
         }`}>
           {isConnected ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
-          {isConnected ? 'Live Engine' : 'Offline'}
+          {isConnected ? 'Live Connected' : 'Offline'}
         </div>
 
         <Link

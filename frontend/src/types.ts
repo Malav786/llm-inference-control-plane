@@ -1,6 +1,6 @@
 export interface Metrics {
-  ttft_p99_ms: number;
-  tpot_avg_ms: number;
+  ttft_p99_ms: number | null;
+  tpot_avg_ms: number | null;
   throughput_tokens_sec: number;
   sm_compute_util_pct: number;
   hbm_bandwidth_util_pct: number;
@@ -8,6 +8,12 @@ export interface Metrics {
   allocated_blocks: number;
   kv_utilization_pct: number;
   cost_per_hour_usd: number;
+  // Extended percentiles (present when rolling window has data)
+  ttft_p50_ms?: number | null;
+  ttft_p95_ms?: number | null;
+  tpot_p50_ms?: number | null;
+  tpot_p95_ms?: number | null;
+  tpot_p99_ms?: number | null;
 }
 
 export interface KVBlock {
@@ -30,6 +36,9 @@ export interface TelemetrySnapshot {
   strategy: string;
   strategy_label: string;
   hardware: string;
+  /** "modeled_estimate" when numbers come from the roofline model;
+   *  "fallback_offline" when the WS client is running its offline demo. */
+  telemetry_kind?: string;
   metrics: Metrics;
   step_actions: StepActions;
   kv_blocks: KVBlock[];

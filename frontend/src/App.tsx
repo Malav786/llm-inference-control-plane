@@ -175,6 +175,7 @@ const App: React.FC = () => {
       {/* ① Header */}
       <FactoryHeader
         isConnected={isConnected}
+        telemetryKind={snapshot.telemetry_kind}
       />
 
       {/* ── GRAND FINALE ARENA: ALL-LEVELS STORY BAR ── */}
