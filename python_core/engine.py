@@ -170,6 +170,140 @@ class Engine:
 
         return SimResult(log=log, steps=step)
 
+    # ------------------------------------------------------------------
+    # Additive stepwise API (does not change run() or any existing test)
+    # ------------------------------------------------------------------
+
+    def run_stepwise(self, extra_requests_source=None):
+        """Generator that yields one (step_index, log_entry) per simulation tick.
+
+        This is an *additive* API — it does not modify run() or any existing
+        behaviour. The simulation harness (engine.py) is a provided exercise
+        contract; this method was added solely to support real-time backend
+        stepping without breaking that contract.
+
+        Parameters
+        ----------
+        extra_requests_source : callable | None
+            Called at the *start* of each step with the current step index:
+            ``extra_requests_source(step) -> list[(arrival_offset, Request)]``
+            Return value is merged into the pending arrivals so injected
+            requests enter the simulation at the correct step.  Pass None
+            (default) for a closed, fixed workload.
+
+        Yields
+        ------
+        (step : int, entry : dict[str, list])
+            ``step``  is the zero-based simulation step index.
+            ``entry`` has the same schema as SimResult.log[step]:
+            keys "prefill", "decode", "preempt", "finished" (absent = no action).
+        """
+        from collections.abc import Iterator  # local import keeps top-level clean
+
+        kv_capacity = self.kv_capacity
+        track_kv = kv_capacity is not None
+
+        states: dict[str, Request] = {
+            r.id: replace(r, prefill_remaining=r.prompt_len)
+            for _, r in self.requests}
+        generated: dict[str, int] = {r.id: 0 for _, r in self.requests}
+        arrivals: dict[int, list[str]] = {}
+        order = sorted(self.requests, key=lambda pair: pair[0])
+        seq: dict[str, int] = {r.id: i for i, (_, r) in enumerate(order)}
+        for arrival, r in order:
+            arrivals.setdefault(arrival, []).append(r.id)
+
+        waiting: list[str] = []
+        admitted: list[str] = []
+        unfinished = len(self.requests)
+        step = 0
+
+        while unfinished > 0:
+            # --- inject externally provided requests for this step ---
+            if extra_requests_source is not None:
+                new_reqs: list = extra_requests_source(step)
+                for offset, req in new_reqs:
+                    arrival_step = step + offset
+                    if req.id not in states:
+                        states[req.id] = replace(req, prefill_remaining=req.prompt_len)
+                        generated[req.id] = 0
+                        unfinished += 1
+                        # Insert into arrival order after existing requests
+                        seq[req.id] = len(seq)
+                    arrivals.setdefault(arrival_step, []).append(req.id)
+
+            waiting.extend(arrivals.pop(step, []))
+
+            if not self.chunked:
+                # Skip requests that exceed max_work (can happen for injected reqs)
+                waiting = [i for i in waiting
+                           if states[i].prefill_remaining <= self.max_work]
+
+            if kv_capacity is not None:
+                view = KvEngineView(
+                    step=step, max_work=self.max_work,
+                    waiting=tuple(states[i] for i in waiting),
+                    admitted=tuple(states[i] for i in admitted),
+                    kv_capacity=kv_capacity)
+            else:
+                view = EngineView(
+                    step=step, max_work=self.max_work,
+                    waiting=tuple(states[i] for i in waiting),
+                    admitted=tuple(states[i] for i in admitted))
+
+            plan = self.plan_step(view)
+            self._validate(plan, waiting, admitted, states, step)
+
+            finished: list[str] = []
+
+            preempted = set(plan.preempt)
+            if preempted:
+                admitted = [i for i in admitted if i not in preempted]
+                for i in plan.preempt:
+                    s = states[i]
+                    states[i] = replace(
+                        s, kv=0,
+                        prefill_remaining=s.prompt_len + generated[i])
+                waiting.extend(plan.preempt)
+                waiting.sort(key=lambda i: seq[i])
+
+            for rid in plan.decode:
+                generated[rid] += 1
+                if track_kv:
+                    states[rid] = replace(states[rid], kv=states[rid].kv + 1)
+                if generated[rid] == states[rid].max_tokens:
+                    finished.append(rid)
+
+            for op in plan.prefill:
+                if op.id in waiting:
+                    waiting.remove(op.id)
+                    admitted.append(op.id)
+                s = states[op.id]
+                states[op.id] = replace(
+                    s, prefill_remaining=s.prefill_remaining - op.tokens,
+                    kv=(s.kv + op.tokens) if track_kv else s.kv)
+                if states[op.id].prefill_remaining == 0:
+                    generated[op.id] += 1
+                    if generated[op.id] == states[op.id].max_tokens:
+                        finished.append(op.id)
+
+            for i in finished:
+                admitted.remove(i)
+                unfinished -= 1
+
+            entry: dict[str, list] = {}
+            if plan.preempt:
+                entry["preempt"] = list(plan.preempt)
+            if plan.decode:
+                entry["decode"] = list(plan.decode)
+            if plan.prefill:
+                entry["prefill"] = [[op.id, op.tokens] for op in plan.prefill]
+            if finished:
+                entry["finished"] = list(finished)
+
+            yield step, entry
+            step += 1
+
     def _validate(self, plan: StepPlan, waiting: list[str],
                   admitted: list[str],
                   states: dict[str, Request], step: int) -> None:
